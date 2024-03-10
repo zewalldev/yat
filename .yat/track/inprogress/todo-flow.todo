@@ -1,10 +1,11 @@
 @title: To implement a workflow with todo-type tasks.
 @author: zewalldev@yandex.ru
-@description_start
+@implementor: zewalldev@yandex.ru
+@description
 The workflow should include the following capabilities:
-  - creation of todo(yat new my-super-todo);
-  - starting work on the todo (yat start my-super-todo)
-  - finishing work on the todo (yat finish my-super-todo)
+  - creation of todo(yat new todo my-super-todo);
+  - starting work on the todo (yat start todo my-super-todo)
+  - finishing work on the todo (yat finish todo my-super-todo)
 
 When creating a todo, it should be possible to enter text and attributes using vim. When executing commands, the todo is moved through the directory new, inprogress, and in the appropriate manner.
 Required attributes:
@@ -14,4 +15,4 @@ Required attributes:
   - description
 
 For syntax examples, see this file.
-@description_end
+@end

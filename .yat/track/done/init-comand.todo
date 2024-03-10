@@ -1,6 +1,7 @@
 @title: To implement init command
 @author: zewalldev@yandex.ru
-@description_start
+@implementor: zewalldev@yandex.ru
+@description
 When executing the command, directories are initialized; 
 if the directory structure partially exists, then needs to check the correctness of existing directories and create missing ones.
-@description_end
+@end

@@ -1,8 +1,12 @@
-module Core (doInit) where
+module Core (doInit, newTodo) where
 
 import Data.Bool (bool)
-import System.Directory (createDirectoryIfMissing, doesDirectoryExist)
-import System.FilePath ((</>))
+import Entity (TaskName)
+import System.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist, getCurrentDirectory)
+import System.FilePath (takeDirectory, (<.>), (</>))
+import System.IO (hFlush, hPutStr)
+import System.IO.Temp (withSystemTempFile)
+import System.Process (createProcess, shell, waitForProcess)
 
 yatDir, trackDir, newDir, inprogressDir, doneDir, releaseDir, releasedDir :: FilePath
 yatDir = ".yat"
@@ -23,6 +27,16 @@ releasedPath = yatDir </> trackDir </> releasedDir
 alreadyInitialized :: IO ()
 alreadyInitialized = putStrLn "Yat already initialized."
 
+notInitialized :: IO ()
+notInitialized = putStrLn "Yat not initialized."
+
+findYatRootFrom :: FilePath -> IO (Maybe FilePath)
+findYatRootFrom "/" = doesDirectoryExist ("/" </> yatDir) >>= bool (return Nothing) (return . Just $ "/")
+findYatRootFrom path = doesDirectoryExist (path </> yatDir) >>= bool (findYatRootFrom . takeDirectory $ path) (return . Just $ path)
+
+findYatRootFromCurrentAnd :: (FilePath -> IO ()) -> IO ()
+findYatRootFromCurrentAnd handle = getCurrentDirectory >>= findYatRootFrom >>= maybe notInitialized handle
+
 createYatDirectories :: IO ()
 createYatDirectories =
   createDirectoryIfMissing True newPath
@@ -32,5 +46,24 @@ createYatDirectories =
     >> createDirectoryIfMissing True releasedPath
     >> putStrLn "Yat has initialized."
 
+editorcmd :: String
+editorcmd = "vim"
+
+todoTemaplate :: String
+todoTemaplate = unlines ["@title: ", "@author: ", "@implementor: ", "@description", "", "@end"]
+
+createTodo :: FilePath -> IO ()
+createTodo todoPath = do
+  withSystemTempFile "yat.todo" $ \src hsrc -> do
+    putStrLn src
+    hPutStr hsrc todoTemaplate >> hFlush hsrc
+    (_, _, _, h) <- createProcess (shell (unwords [editorcmd, src]))
+    r <- waitForProcess h
+    print r
+    copyFile src todoPath
+
 doInit :: IO ()
 doInit = doesDirectoryExist yatDir >>= bool createYatDirectories alreadyInitialized
+
+newTodo :: TaskName -> IO ()
+newTodo name = findYatRootFromCurrentAnd $ createTodo . (</> newPath </> name <.> "todo")
