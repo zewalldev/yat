@@ -8,8 +8,9 @@ The workflow should include the following capabilities:
 
 When creating a todo, it should be possible to enter text and attributes using vim. When executing commands, the todo is moved through the directory new, inprogress, and in the appropriate manner.
 Required attributes:
-  - author
   - title
+  - author
+  - implementor
   - description
 
 For syntax examples, see this file.
