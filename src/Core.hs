@@ -1,8 +1,8 @@
-module Core (doInit, newTodo) where
+module Core (doInit, newTodo, startTodo, finishTodo) where
 
 import Data.Bool (bool)
 import Entity (TaskName)
-import System.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist, getCurrentDirectory)
+import System.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist, getCurrentDirectory, renameFile)
 import System.FilePath (takeDirectory, (<.>), (</>))
 import System.IO (hFlush, hPutStr)
 import System.IO.Temp (withSystemTempFile)
@@ -12,7 +12,7 @@ yatDir, trackDir, newDir, inprogressDir, doneDir, releaseDir, releasedDir :: Fil
 yatDir = ".yat"
 trackDir = "track"
 newDir = "new"
-inprogressDir = "inprogressPath"
+inprogressDir = "inprogress"
 doneDir = "done"
 releaseDir = "release"
 releasedDir = "released"
@@ -66,4 +66,16 @@ doInit :: IO ()
 doInit = doesDirectoryExist yatDir >>= bool createYatDirectories alreadyInitialized
 
 newTodo :: TaskName -> IO ()
-newTodo name = findYatRootFromCurrentAnd $ createTodo . (</> newPath </> name <.> "todo")
+newTodo name = findYatRootFromCurrentAnd (createTodo . (</> newPath </> name <.> "todo")) >> putStrLn ("Todo " ++ name ++ " is created")
+
+startTodo :: TaskName -> IO ()
+startTodo name = findYatRootFromCurrentAnd $
+  \root ->
+    renameFile (root </> newPath </> name <.> "todo") (root </> inprogressPath </> name <.> "todo")
+      >> putStrLn ("Todo " ++ name ++ " is starting")
+
+finishTodo :: TaskName -> IO ()
+finishTodo name = findYatRootFromCurrentAnd $
+  \root ->
+    renameFile (root </> inprogressPath </> name <.> "todo") (root </> donePath </> name <.> "todo")
+      >> putStrLn ("Todo " ++ name ++ " is finished")

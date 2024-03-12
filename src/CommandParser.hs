@@ -33,7 +33,29 @@ parseNewTodoCommand = do
   eof
   return (NewTodo name)
 
+parseStartTodoCommand :: Parser Command
+parseStartTodoCommand = do
+  _ <- string "start"
+  _ <- spaces1
+  _ <- string "todo"
+  _ <- spaces1
+  name <- identifier
+  eof
+  return (StartTodo name)
+
+parseFinishTodoCommand :: Parser Command
+parseFinishTodoCommand = do
+  _ <- string "finish"
+  _ <- spaces1
+  _ <- string "todo"
+  _ <- spaces1
+  name <- identifier
+  eof
+  return (FinishTodo name)
+
 parseCommand :: Parser Command
 parseCommand =
   try parseInitCommand
     <|> try parseNewTodoCommand
+    <|> try parseStartTodoCommand
+    <|> try parseFinishTodoCommand
