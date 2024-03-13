@@ -38,12 +38,12 @@ findYatRootFromCurrent :: IO (Maybe FilePath)
 findYatRootFromCurrent = getCurrentDirectory >>= findYatRootFrom
 
 createYatDirectories :: IO ()
-createYatDirectories = do 
-    createDirectoryIfMissing True newPath
-    createDirectoryIfMissing True inprogressPath
-    createDirectoryIfMissing True donePath
-    createDirectoryIfMissing True releasePath
-    createDirectoryIfMissing True releasedPath
+createYatDirectories = do
+  createDirectoryIfMissing True newPath
+  createDirectoryIfMissing True inprogressPath
+  createDirectoryIfMissing True donePath
+  createDirectoryIfMissing True releasePath
+  createDirectoryIfMissing True releasedPath
 
 editorcmd :: String
 editorcmd = "vim"
@@ -60,14 +60,14 @@ createTodo todoPath = do
     copyFile src todoPath
 
 doInit :: IO ()
-doInit = do 
-    alreadyInit <- doesDirectoryExist yatDir
-    if not alreadyInit
-        then do 
-            createYatDirectories
-            putStrLn "Yat has initialized."
-        else
-            alreadyInitialized
+doInit = do
+  alreadyInit <- doesDirectoryExist yatDir
+  if not alreadyInit
+    then do
+      createYatDirectories
+      putStrLn "Yat has initialized."
+    else
+      alreadyInitialized
 
 newTodo :: TaskName -> IO ()
 newTodo name = do
