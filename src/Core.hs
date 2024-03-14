@@ -99,6 +99,7 @@ startTodo name = do
           if not todoInprogress
             then do
               renameFile from to
+              _ <- runCommand (unwords [editorcmd, to]) >>= waitForProcess
               putStrLn ("Todo " ++ name ++ " is starting")
             else putStrLn "Todo already in progress."
         else putStrLn "Todo doesn't exists"
