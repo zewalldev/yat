@@ -23,6 +23,8 @@ dependencies:
 - parsec
 - directory
 - filepath
+- process
+- temporary
 
 ghc-options:
 - -Wall
@@ -48,4 +50,3 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - yat
-
