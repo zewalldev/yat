@@ -1,4 +1,4 @@
-module Core (doInit, newTodo, startTodo, finishTodo) where
+module Core (doInit, requestTodo, startTodo, finishTodo) where
 
 import Data.Bool (bool)
 import Entity (TaskName)
@@ -8,17 +8,17 @@ import System.IO (hFlush, hPutStr)
 import System.IO.Temp (withSystemTempFile)
 import System.Process (runCommand, waitForProcess)
 
-yatDir, trackDir, newDir, inprogressDir, doneDir, releaseDir, releasedDir :: FilePath
+yatDir, trackDir, requestedDir, inprogressDir, doneDir, releaseDir, releasedDir :: FilePath
 yatDir = ".yat"
 trackDir = "track"
-newDir = "new"
+requestedDir = "requested"
 inprogressDir = "inprogress"
 doneDir = "done"
 releaseDir = "release"
 releasedDir = "released"
 
-newPath, inprogressPath, donePath, releasePath, releasedPath :: FilePath
-newPath = yatDir </> trackDir </> newDir
+requestedPath, inprogressPath, donePath, releasePath, releasedPath :: FilePath
+requestedPath = yatDir </> trackDir </> requestedDir
 inprogressPath = yatDir </> trackDir </> inprogressDir
 donePath = yatDir </> trackDir </> doneDir
 releasePath = yatDir </> trackDir </> releaseDir
@@ -39,7 +39,7 @@ findYatRootFromCurrent = getCurrentDirectory >>= findYatRootFrom
 
 createYatDirectories :: IO ()
 createYatDirectories = do
-  createDirectoryIfMissing True newPath
+  createDirectoryIfMissing True requestedPath
   createDirectoryIfMissing True inprogressPath
   createDirectoryIfMissing True donePath
   createDirectoryIfMissing True releasePath
@@ -69,13 +69,13 @@ doInit = do
     else
       alreadyInitialized
 
-newTodo :: TaskName -> IO ()
-newTodo name = do
+requestTodo :: TaskName -> IO ()
+requestTodo name = do
   mb_rootDir <- findYatRootFromCurrent
   case mb_rootDir of
     Nothing -> notInitialized
     Just rootDir -> do
-      let new = rootDir </> newPath </> name <.> "todo"
+      let new = rootDir </> requestedPath </> name <.> "todo"
       alreadyEixsts <- doesFileExist new
       if not alreadyEixsts
         then do
@@ -90,7 +90,7 @@ startTodo name = do
   case mb_rootDir of
     Nothing -> notInitialized
     Just rootDir -> do
-      let from = rootDir </> newPath </> name <.> "todo"
+      let from = rootDir </> requestedPath </> name <.> "todo"
       let to = rootDir </> inprogressPath </> name <.> "todo"
       todoExists <- doesFileExist from
       todoInprogress <- doesFileExist to

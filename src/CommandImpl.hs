@@ -1,17 +1,17 @@
 module CommandImpl (Command (..), exec) where
 
-import Core (doInit, finishTodo, newTodo, startTodo)
+import Core (doInit, finishTodo, requestTodo, startTodo)
 import Entity (TaskName)
 
 data Command
   = Init
-  | NewTodo TaskName
+  | RequestTodo TaskName
   | StartTodo TaskName
   | FinishTodo TaskName
   deriving (Show)
 
 exec :: Command -> IO ()
 exec Init = doInit
-exec (NewTodo name) = newTodo name
+exec (RequestTodo name) = requestTodo name
 exec (StartTodo name) = startTodo name
 exec (FinishTodo name) = finishTodo name
