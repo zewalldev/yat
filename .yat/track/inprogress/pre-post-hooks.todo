@@ -4,4 +4,9 @@
 @description
 Hooks allow to perform action before and after the state is changed. 
 For example it allow doing git operation or validate tasks content.
+
+Implementation details.
+For every state changed commands it is looked up an executable script by the pattern "pre\post_request\start\etc_todo\etc"(<stage>_<command>_<entity>),
+and then it is runing with passing entity name.
+Scripts are storage in the ".yat/conf/hooks". If pre scripts returns error code(not zero) then command is interupted. It is for validation needs.
 @end
