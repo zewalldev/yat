@@ -1,0 +1,8 @@
+@title: Add fixme-flow 
+@author: zewalldev@ya.ru
+@implementor: 
+@description
+Add fixme-flow like todo-flow.
+
+Fixme contains the same attributes like as todo and "found in release".
+@end

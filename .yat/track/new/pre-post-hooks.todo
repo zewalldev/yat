@@ -1,0 +1,7 @@
+@title: Add hooks functionality 
+@author: 
+@implementor: 
+@description
+Hooks allow to perform action before and after the state is changed. 
+For example it allow doing git operation or validate tasks content.
+@end
