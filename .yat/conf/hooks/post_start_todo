@@ -1,0 +1,5 @@
+#!/bin/bash
+
+git checkout -b feature/$1
+git add .yat/track/inprogress/$1.todo
+git commit -m "Todo $1 is started"

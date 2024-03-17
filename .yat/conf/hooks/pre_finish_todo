@@ -1,0 +1,6 @@
+#!/bin/bash
+
+if [ $(git rev-parse --abbrev-ref HEAD) != "feature/$1" ]; then
+    echo "The 'feature/$1' branch must be selected"
+    exit 1
+fi

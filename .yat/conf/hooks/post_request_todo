@@ -1,0 +1,4 @@
+#!/bin/bash
+
+git add .yat/track/requested/$1.todo
+git commit -m "Request todo $1"
