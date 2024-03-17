@@ -3,12 +3,13 @@ module Core (doInit, requestTodo, startTodo, finishTodo) where
 import Data.Bool (bool)
 import Entity (TaskName)
 import System.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist, doesFileExist, getCurrentDirectory, renameFile)
+import System.Exit (ExitCode (ExitSuccess))
 import System.FilePath (takeDirectory, (<.>), (</>))
 import System.IO (hFlush, hPutStr)
 import System.IO.Temp (withSystemTempFile)
-import System.Process (runCommand, waitForProcess)
+import System.Process (CreateProcess (cwd), createProcess, proc, waitForProcess)
 
-yatDir, trackDir, requestedDir, inprogressDir, doneDir, releaseDir, releasedDir :: FilePath
+yatDir, trackDir, requestedDir, inprogressDir, doneDir, releaseDir, releasedDir, confDir, hooksDir :: FilePath
 yatDir = ".yat"
 trackDir = "track"
 requestedDir = "requested"
@@ -16,13 +17,16 @@ inprogressDir = "inprogress"
 doneDir = "done"
 releaseDir = "release"
 releasedDir = "released"
+confDir = "conf"
+hooksDir = "hooks"
 
-requestedPath, inprogressPath, donePath, releasePath, releasedPath :: FilePath
+requestedPath, inprogressPath, donePath, releasePath, releasedPath, hooksPath :: FilePath
 requestedPath = yatDir </> trackDir </> requestedDir
 inprogressPath = yatDir </> trackDir </> inprogressDir
 donePath = yatDir </> trackDir </> doneDir
 releasePath = yatDir </> trackDir </> releaseDir
 releasedPath = yatDir </> trackDir </> releasedDir
+hooksPath = yatDir </> confDir </> hooksDir
 
 alreadyInitialized :: IO ()
 alreadyInitialized = putStrLn "Yat already initialized."
@@ -44,6 +48,7 @@ createYatDirectories = do
   createDirectoryIfMissing True donePath
   createDirectoryIfMissing True releasePath
   createDirectoryIfMissing True releasedPath
+  createDirectoryIfMissing True hooksPath
 
 editorcmd :: String
 editorcmd = "vim"
@@ -56,8 +61,19 @@ createTodo todoPath = do
   withSystemTempFile "yat.todo" $ \src hsrc -> do
     hPutStr hsrc todoTemaplate
     hFlush hsrc
-    _ <- runCommand (unwords [editorcmd, src]) >>= waitForProcess
+    (_, _, _, h) <- createProcess (proc editorcmd [src])
+    _ <- waitForProcess h
     copyFile src todoPath
+
+runHook :: String -> String -> String -> String -> String -> IO ExitCode
+runHook root stage command entity name = do
+  let scriptPath = root </> hooksPath </> (stage ++ "_" ++ command ++ "_" ++ entity)
+  sriptExists <- doesFileExist scriptPath
+  if sriptExists
+    then do
+      (_, _, _, h) <- createProcess (proc scriptPath [name]) {cwd = Just root}
+      waitForProcess h
+    else pure ExitSuccess
 
 doInit :: IO ()
 doInit = do
@@ -79,8 +95,14 @@ requestTodo name = do
       alreadyEixsts <- doesFileExist new
       if not alreadyEixsts
         then do
-          createTodo new
-          putStrLn ("Todo " ++ name ++ " is created")
+          ret <- runHook rootDir "pre" "request" "todo" name
+          if ret == ExitSuccess
+            then do
+              createTodo new
+              _ <- runHook rootDir "post" "request" "todo" name
+              putStrLn ("Todo " ++ name ++ " is created")
+            else
+              putStrLn "Request is interupted"
         else
           putStrLn ("Todo " ++ name ++ " already exists")
 
@@ -98,9 +120,16 @@ startTodo name = do
         then
           if not todoInprogress
             then do
-              renameFile from to
-              _ <- runCommand (unwords [editorcmd, to]) >>= waitForProcess
-              putStrLn ("Todo " ++ name ++ " is starting")
+              ret <- runHook rootDir "pre" "start" "todo" name
+              if ret == ExitSuccess
+                then do
+                  renameFile from to
+                  (_, _, _, h) <- createProcess (proc editorcmd [to])
+                  _ <- waitForProcess h
+                  _ <- runHook rootDir "post" "start" "todo" name
+                  putStrLn ("Todo " ++ name ++ " is starting")
+                else
+                  putStrLn "Starting is interupted"
             else putStrLn "Todo already in progress."
         else putStrLn "Todo doesn't exists"
 
@@ -118,7 +147,13 @@ finishTodo name = do
         then
           if not todoIsDone
             then do
-              renameFile from to
-              putStrLn ("Todo " ++ name ++ " is finished")
+              ret <- runHook rootDir "pre" "finish" "todo" name
+              if ret == ExitSuccess
+                then do
+                  renameFile from to
+                  _ <- runHook rootDir "post" "finish" "todo" name
+                  putStrLn ("Todo " ++ name ++ " is finished")
+                else
+                  putStrLn "Finishing is interupted"
             else putStrLn "Todo is already done."
         else putStrLn "Todo doesn't exists"
