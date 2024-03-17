@@ -1,5 +1,6 @@
 #!/bin/bash
 
+git add .yat/track/inprogress/$1.todo
 git add .yat/track/done/$1.todo
 git commit -m "Finsihed todo $1"
 
