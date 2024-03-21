@@ -1,35 +1,15 @@
 module Core (doInit, requestTodo, startTodo, finishTodo) where
 
 import Data.Bool (bool)
-import Entity (TaskName)
-import System.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist, doesFileExist, getCurrentDirectory, renameFile)
-import System.Exit (ExitCode (ExitSuccess))
-import System.FilePath (takeDirectory, (<.>), (</>))
-import System.IO (hFlush, hPutStr)
-import System.IO.Temp (withSystemTempFile)
-import System.Process (CreateProcess (cwd), createProcess, proc, waitForProcess)
+import EditorOperation (edit)
+import HookOperation (Command (..), Entity (..), runPostHook, runPreHook)
+import System.Directory (doesDirectoryExist, getCurrentDirectory)
+import System.FilePath (takeDirectory, (</>))
+import TodoOperation (createTodo, getTodoContent, initialize, isInitilaized, makeTodoCompleted, makeTodoInprogress, setTodoContent, todoTemaplate)
+import Types (TaskFullName (..), TaskName, TaskStatus (..))
 
-yatDir, trackDir, requestedDir, inprogressDir, doneDir, releaseDir, releasedDir, confDir, hooksDir :: FilePath
+yatDir :: FilePath
 yatDir = ".yat"
-trackDir = "track"
-requestedDir = "requested"
-inprogressDir = "inprogress"
-doneDir = "done"
-releaseDir = "release"
-releasedDir = "released"
-confDir = "conf"
-hooksDir = "hooks"
-
-requestedPath, inprogressPath, donePath, releasePath, releasedPath, hooksPath :: FilePath
-requestedPath = yatDir </> trackDir </> requestedDir
-inprogressPath = yatDir </> trackDir </> inprogressDir
-donePath = yatDir </> trackDir </> doneDir
-releasePath = yatDir </> trackDir </> releaseDir
-releasedPath = yatDir </> trackDir </> releasedDir
-hooksPath = yatDir </> confDir </> hooksDir
-
-alreadyInitialized :: IO ()
-alreadyInitialized = putStrLn "Yat already initialized."
 
 notInitialized :: IO ()
 notInitialized = putStrLn "Yat not initialized."
@@ -41,119 +21,79 @@ findYatRootFrom path = doesDirectoryExist (path </> yatDir) >>= bool (findYatRoo
 findYatRootFromCurrent :: IO (Maybe FilePath)
 findYatRootFromCurrent = getCurrentDirectory >>= findYatRootFrom
 
-createYatDirectories :: IO ()
-createYatDirectories = do
-  createDirectoryIfMissing True requestedPath
-  createDirectoryIfMissing True inprogressPath
-  createDirectoryIfMissing True donePath
-  createDirectoryIfMissing True releasePath
-  createDirectoryIfMissing True releasedPath
-  createDirectoryIfMissing True hooksPath
-
-editorcmd :: String
-editorcmd = "vim"
-
-todoTemaplate :: String
-todoTemaplate = unlines ["@title: ", "@author: ", "@implementor: ", "@description", "", "@end"]
-
-createTodo :: FilePath -> IO ()
-createTodo todoPath = do
-  withSystemTempFile "yat.todo" $ \src hsrc -> do
-    hPutStr hsrc todoTemaplate
-    hFlush hsrc
-    (_, _, _, h) <- createProcess (proc editorcmd [src])
-    _ <- waitForProcess h
-    copyFile src todoPath
-
-runHook :: String -> String -> String -> String -> String -> IO ExitCode
-runHook root stage command entity name = do
-  let scriptPath = root </> hooksPath </> (stage ++ "_" ++ command ++ "_" ++ entity)
-  sriptExists <- doesFileExist scriptPath
-  if sriptExists
-    then do
-      (_, _, _, h) <- createProcess (proc scriptPath [name]) {cwd = Just root}
-      waitForProcess h
-    else pure ExitSuccess
-
 doInit :: IO ()
 doInit = do
-  alreadyInit <- doesDirectoryExist yatDir
-  if not alreadyInit
+  alreadyInit <- isInitilaized
+  if alreadyInit
     then do
-      createYatDirectories
-      putStrLn "Yat has initialized."
-    else
-      alreadyInitialized
+      putStrLn "Yat already initialized."
+    else do
+      initialize
+      putStrLn "Yat has been initialized."
 
 requestTodo :: TaskName -> IO ()
 requestTodo name = do
-  mb_rootDir <- findYatRootFromCurrent
-  case mb_rootDir of
+  mbRootDir <- findYatRootFromCurrent
+  case mbRootDir of
     Nothing -> notInitialized
     Just rootDir -> do
-      let new = rootDir </> requestedPath </> name <.> "todo"
-      alreadyEixsts <- doesFileExist new
-      if not alreadyEixsts
+      isSuccess <- runPreHook rootDir Request Todo name
+      if isSuccess
         then do
-          ret <- runHook rootDir "pre" "request" "todo" name
-          if ret == ExitSuccess
-            then do
-              createTodo new
-              _ <- runHook rootDir "post" "request" "todo" name
-              putStrLn ("Todo " ++ name ++ " is created")
-            else
-              putStrLn "Request is interupted"
+          ret1 <- createTodo rootDir name todoTemaplate
+          case ret1 of
+            Left err -> putStrLn err
+            Right _ -> do
+              content <- edit todoTemaplate
+              ret2 <- setTodoContent rootDir (MkTaskFullName Requested name) content
+              case ret2 of
+                Left err -> putStrLn err
+                Right () -> do
+                  runPostHook rootDir Request Todo name
+                  putStrLn ("Todo " ++ name ++ " is starting")
         else
-          putStrLn ("Todo " ++ name ++ " already exists")
+          putStrLn "Request is interupted"
 
 startTodo :: TaskName -> IO ()
 startTodo name = do
-  mb_rootDir <- findYatRootFromCurrent
-  case mb_rootDir of
+  mbRootDir <- findYatRootFromCurrent
+  case mbRootDir of
     Nothing -> notInitialized
     Just rootDir -> do
-      let from = rootDir </> requestedPath </> name <.> "todo"
-      let to = rootDir </> inprogressPath </> name <.> "todo"
-      todoExists <- doesFileExist from
-      todoInprogress <- doesFileExist to
-      if todoExists
-        then
-          if not todoInprogress
-            then do
-              ret <- runHook rootDir "pre" "start" "todo" name
-              if ret == ExitSuccess
-                then do
-                  renameFile from to
-                  (_, _, _, h) <- createProcess (proc editorcmd [to])
-                  _ <- waitForProcess h
-                  _ <- runHook rootDir "post" "start" "todo" name
-                  putStrLn ("Todo " ++ name ++ " is starting")
-                else
-                  putStrLn "Starting is interupted"
-            else putStrLn "Todo already in progress."
-        else putStrLn "Todo doesn't exists"
+      isSuccess <- runPreHook rootDir Start Todo name
+      if isSuccess
+        then do
+          mbContent <- getTodoContent rootDir (MkTaskFullName Requested name)
+          case mbContent of
+            Nothing -> putStrLn "Todo doesn't exists"
+            Just content -> do
+              newContent <- edit content
+              ret1 <- setTodoContent rootDir (MkTaskFullName Requested name) newContent
+              case ret1 of
+                Left err -> putStrLn err
+                Right () -> do
+                  ret2 <- makeTodoInprogress rootDir name
+                  case ret2 of
+                    Left err -> putStrLn err
+                    Right _ -> do
+                      runPostHook rootDir Start Todo name
+                      putStrLn ("Todo " ++ name ++ " is starting")
+        else
+          putStrLn "Starting is interupted"
 
 finishTodo :: TaskName -> IO ()
 finishTodo name = do
-  mb_rootDir <- findYatRootFromCurrent
-  case mb_rootDir of
+  mbRootDir <- findYatRootFromCurrent
+  case mbRootDir of
     Nothing -> notInitialized
     Just rootDir -> do
-      let from = rootDir </> inprogressPath </> name <.> "todo"
-      let to = rootDir </> donePath </> name <.> "todo"
-      todoInProgress <- doesFileExist from
-      todoIsDone <- doesFileExist to
-      if todoInProgress
-        then
-          if not todoIsDone
-            then do
-              ret <- runHook rootDir "pre" "finish" "todo" name
-              if ret == ExitSuccess
-                then do
-                  renameFile from to
-                  _ <- runHook rootDir "post" "finish" "todo" name
-                  putStrLn ("Todo " ++ name ++ " is finished")
-                else
-                  putStrLn "Finishing is interupted"
-            else putStrLn "Todo is already done."
-        else putStrLn "Todo doesn't exists"
+      isSuccess <- runPreHook rootDir Finish Todo name
+      if isSuccess
+        then do
+          ret <- makeTodoCompleted rootDir name
+          case ret of
+            Left err -> putStrLn err
+            Right () -> do
+              runPostHook rootDir Finish Todo name
+              putStrLn ("Todo " ++ name ++ " is finished")
+        else putStrLn "Finishing is interupted"

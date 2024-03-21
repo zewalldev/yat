@@ -28,7 +28,10 @@ library
       CommandImpl
       CommandParser
       Core
-      Entity
+      EditorOperation
+      HookOperation
+      TodoOperation
+      Types
   other-modules:
       Paths_yat
   hs-source-dirs:

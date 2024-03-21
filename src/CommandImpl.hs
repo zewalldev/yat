@@ -1,7 +1,7 @@
 module CommandImpl (Command (..), exec) where
 
 import Core (doInit, finishTodo, requestTodo, startTodo)
-import Entity (TaskName)
+import Types (TaskName)
 
 data Command
   = Init
