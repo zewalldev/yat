@@ -25,6 +25,8 @@ dependencies:
 - filepath
 - process
 - temporary
+- transformers
+- rainbow
 
 ghc-options:
 - -Wall

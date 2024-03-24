@@ -27,10 +27,12 @@ library
       App
       CommandImpl
       CommandParser
-      Core
-      EditorOperation
-      HookOperation
-      TodoOperation
+      ConfigOps
+      EditorOps
+      HookOps
+      Ops
+      TaskParser
+      TodoOps
       Types
   other-modules:
       Paths_yat
@@ -43,7 +45,9 @@ library
     , filepath
     , parsec
     , process
+    , rainbow
     , temporary
+    , transformers
   default-language: Haskell2010
 
 executable yat
@@ -59,6 +63,8 @@ executable yat
     , filepath
     , parsec
     , process
+    , rainbow
     , temporary
+    , transformers
     , yat
   default-language: Haskell2010
