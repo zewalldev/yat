@@ -48,8 +48,8 @@ initialize = do
 
 makeTodoCompleted :: FilePath -> TaskName -> Op ()
 makeTodoCompleted root name = do
-  let from = root </> requestedPath </> name <.> "todo"
-  let to = root </> inprogressPath </> name <.> "todo"
+  let from = root </> inprogressPath </> name <.> "todo"
+  let to = root </> donePath </> name <.> "todo"
   isRequested <- liftIO $ doesFileExist from
   todoIsInprogress <- liftIO $ doesFileExist to
   if isRequested
