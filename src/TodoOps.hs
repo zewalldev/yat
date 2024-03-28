@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TupleSections #-}
 
 module TodoOps (isInitilaized, initialize, todoTemaplate, createTodo, setTodoContent, makeTodoInprogress, getTodoContent, makeTodoCompleted, listTodo) where
 
@@ -118,14 +119,17 @@ todoPath Requested = requestedPath
 todoPath Inprogress = inprogressPath
 todoPath Done = donePath
 
-newtype TodoList = TodoList [TodoContent]
+newtype TodoList = TodoList [(TaskName, TodoContent)]
 
 instance Show TodoList where
-  show (TodoList items) = unlines $ map taskTitle items
+  show (TodoList items) = unlines $ map (\it -> fst it ++ ": " ++ taskTitle (snd it)) items
+
+todoName :: String -> String
+todoName = takeWhile ('.' /=)
 
 listTodo :: FilePath -> TaskStatus -> Op TodoList
 listTodo root status = do
   files <- liftIO . listDirectory $ root </> todoPath status
-  mbTodos <- mapM (\f -> liftIO . parseTodo $ (root </> todoPath status </> f)) files
+  mbTodos <- mapM (\f -> (fmap . fmap) (todoName f,) (liftIO . parseTodo $ (root </> todoPath status </> f))) files
   let todos = catMaybes mbTodos
   pure (TodoList todos)
