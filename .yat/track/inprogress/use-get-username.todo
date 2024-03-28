@@ -1,6 +1,8 @@
 @title: Getting author name\email from user configs 
 @author: zewalldev@ya.ru
-@implementor: 
+@implementor: zewalldev@ya.ru 
 @description
 Using git information about user name\email when todo\fixme creating.
+
+Also add todo types and think about the application architecture
 @end
