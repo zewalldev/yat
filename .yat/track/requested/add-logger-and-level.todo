@@ -1,0 +1,6 @@
+@title: Add logs with levels 
+@author: Denis Shirokov <zewalldev@yandex.ru>
+@description
+Add logs with levels: info(by defaults), warn and debug.
+
+@end
