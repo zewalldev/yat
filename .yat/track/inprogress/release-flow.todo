@@ -3,7 +3,7 @@
 @implementer: Denis Shirokov <zewalldev@yandex.ru>
 @description
 The release starting when the command is executed: "start releaes 1.0.0" and ends with the "finish release 1.0.0".
-At the start, all completed tasks, taking into account manual control, begin to belong to the new release. 
+At the start, all completed tasks, begininig to belong to the new release. 
 When the release is finished, it goes into final status.
 
 @end
