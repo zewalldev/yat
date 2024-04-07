@@ -40,7 +40,9 @@ ghc-options:
 - -Wredundant-constraints
 
 library:
-  source-dirs: src
+  source-dirs:
+    - src
+    - src/opts
 
 executables:
   yat:

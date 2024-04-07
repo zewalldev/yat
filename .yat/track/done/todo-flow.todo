@@ -1,6 +1,6 @@
 @title: To implement a workflow with todo-type tasks.
 @author: zewalldev@yandex.ru
-@implementor: zewalldev@yandex.ru
+@implementer: zewalldev@yandex.ru
 @description
 The workflow should include the following capabilities:
   - creation of todo(yat new todo my-super-todo);

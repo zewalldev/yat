@@ -1,49 +1,56 @@
+{-# LANGUAGE ScopedTypeVariables #-}
+
 module CommandImpl (Command (..), exec) where
 
-import ConfigOps (Config(..), loadConfig)
+import Classes (HasTitle (..), ToString (..))
+import ConfigOps (Config (..), initialize, isInitilaized, loadConfig)
 import EditorOps (edit)
-import HookOps (Entity (..), HookCommand (..), runPostHook, runPreHook)
+import HookOps (runPostHook, runPreHook)
 import Ops (runOp)
-import TodoOps (createTodo, getTodoContent, initialize, isInitilaized, makeTodoCompleted, makeTodoInprogress, setTodoContent, todoTemaplate, listTodo)
-import Types (TaskFullName (..), TaskName, TaskStatus (..))
-
-data Command
-  = Init
-  | RequestTodo TaskName
-  | StartTodo TaskName
-  | FinishTodo TaskName
-  | ListTodo TaskStatus
-  deriving (Show)
+import TaskClassesImpl ()
+import TaskOps (createTodo, getFinishedTodo, getInprogressTodo, getRequestedTodo, listKeys, makeTodoCompleted, makeTodoInprogress, taskFromString)
+import Types (Command (..), Inprogress (Inprogress, _implementer, _requested), OperationCommand (..), Requested (..), Task (..), TaskStatus (..))
+import UserOps (getUser)
 
 exec :: Command -> IO ()
-exec Init = runOp $ do
+exec InitCommand = runOp $ do
   isInitilaized
   initialize
   pure "Yat has been initialized."
-exec (RequestTodo name) = runOp $ do
+exec (RequestTaskCommand name) = runOp $ do
   Config rootDir <- loadConfig
-  runPreHook rootDir Request Todo name
-  createTodo rootDir name todoTemaplate
-  content <- edit todoTemaplate
-  setTodoContent rootDir (MkTaskFullName Requested name) content
-  runPostHook rootDir Request Todo name
+  runPreHook rootDir RequestOperation name
+  user <- getUser
+  text <- edit (toString Requested {_author = user, _task = Todo {_title = "", _description = ""}})
+  requested <- taskFromString text
+  createTodo rootDir name requested
+  runPostHook rootDir RequestOperation name
   pure $ "Todo " ++ name ++ " is requested"
-exec (StartTodo name) = runOp $ do
+exec (StartTaskCommand name) = runOp $ do
   Config rootDir <- loadConfig
-  runPreHook rootDir Start Todo name
-  content <- getTodoContent rootDir (MkTaskFullName Requested name)
-  newContent <- edit content
-  setTodoContent rootDir (MkTaskFullName Requested name) newContent
-  makeTodoInprogress rootDir name
-  runPostHook rootDir Start Todo name
+  runPreHook rootDir StartOperation name
+  requested <- getRequestedTodo rootDir name
+  user <- getUser
+  text <- edit (toString Inprogress {_implementer = user, _requested = requested})
+  inprogress <- taskFromString text
+  makeTodoInprogress rootDir name inprogress
+  runPostHook rootDir StartOperation name
   pure $ "Todo " ++ name ++ " is starting"
-exec (FinishTodo name) = runOp $ do
+exec (FinishTaskCommand name) = runOp $ do
   Config rootDir <- loadConfig
-  runPreHook rootDir Finish Todo name
+  runPreHook rootDir FinishOperation name
   makeTodoCompleted rootDir name
-  runPostHook rootDir Finish Todo name
+  runPostHook rootDir FinishOperation name
   pure $ "Todo " ++ name ++ " is finished"
-exec (ListTodo status) = runOp $ do
+exec (ListTaskCommand status) = runOp $ do
   Config rootDir <- loadConfig
-  listTodo rootDir status
-
+  keys <- listKeys rootDir status
+  items <-
+    mapM
+      ( \key -> case status of
+          RequestedStatus -> fmap (((key ++ ": ") ++) . title) (getRequestedTodo rootDir key)
+          InprogressStatus -> fmap (((key ++ ": ") ++) . title) (getInprogressTodo rootDir key)
+          DoneStatus -> fmap (((key ++ ": ") ++) . title) (getFinishedTodo rootDir key)
+      )
+      keys
+  pure (unlines items)

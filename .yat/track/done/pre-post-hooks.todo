@@ -1,6 +1,6 @@
 @title: Add hooks functionality 
 @author: zewalldev@ya.ru
-@implementor: zewalldev@ya.ru
+@implementer: zewalldev@ya.ru
 @description
 Hooks allow to perform action before and after the state is changed. 
 For example it allow doing git operation or validate tasks content.

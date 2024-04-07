@@ -1,44 +1,68 @@
-module TaskParser (parseTodo) where
+module TaskParser
+  ( requestedTodoParser,
+    inprogressTodoParser,
+    doneTodoParser,
+  )
+where
 
-import Control.Monad (void)
-import Data.Functor ((<&>))
-import Text.Parsec (char, many, noneOf, oneOf, string)
-import Text.Parsec.Char (anyChar)
-import Text.Parsec.Combinator (manyTill)
-import Text.Parsec.Prim (try)
-import Text.Parsec.String (Parser, parseFromFile)
-import Types (TodoContent (..))
+import ParserUtils (tag, content)
+import Text.Parsec.String (Parser)
+import Types (Done (..), Inprogress (..), Requested (..), Task (..))
 
-whitespaces :: Parser ()
-whitespaces = void (many (oneOf " "))
-
-parserTodo :: Parser TodoContent
-parserTodo = do
-  _ <- string "@title:"
-  _ <- whitespaces
-  title <- many (noneOf "\n")
-  _ <- char '\n'
-  _ <- string "@author:"
-  _ <- whitespaces
-  author <- many (noneOf "\n")
-  _ <- char '\n'
-  _ <- string "@implementor:"
-  implementor <- many (noneOf "\n")
-  _ <- char '\n'
-  _ <- string "@description"
-  _ <- char '\n'
-  description <- manyTill anyChar (try (string "@end"))
+requestedTodoParser :: Parser Requested
+requestedTodoParser = do
+  title <- tag "title"
+  author <- tag "author"
+  description <- content "description"
   pure
-    TodoContent
-      { taskTitle = title,
-        taskDescription = description,
-        taskAuthor = author,
-        taskImplementor = implementor
+    Requested
+      { _task =
+          Todo
+            { _title = title,
+              _description = description
+            },
+        _author = author
       }
 
-rightToMaybe :: Either a b -> Maybe b
-rightToMaybe (Left _) = Nothing
-rightToMaybe (Right x) = Just x
+inprogressTodoParser :: Parser Inprogress
+inprogressTodoParser = do
+  title <- tag "title"
+  author <- tag "author"
+  implementer <- tag "implementer"
+  description <- content "description"
+  pure
+    Inprogress
+      { _implementer = implementer,
+        _requested =
+          Requested
+            { _author = author,
+              _task =
+                Todo
+                  { _title = title,
+                    _description = description
+                  }
+            }
+      }
 
-parseTodo :: FilePath -> IO (Maybe TodoContent)
-parseTodo fn = parseFromFile parserTodo fn <&> rightToMaybe
+doneTodoParser :: Parser Done
+doneTodoParser = do
+  title <- tag "title"
+  author <- tag "author"
+  implementer <- tag "implementer"
+  description <- content "description"
+  pure
+    Done
+      { _inprogress =
+          Inprogress
+            { _implementer = implementer,
+              _requested =
+                Requested
+                  { _author = author,
+                    _task =
+                      Todo
+                        { _title = title,
+                          _description = description
+                        }
+                  }
+            }
+      }

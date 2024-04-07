@@ -1,6 +1,6 @@
 @title: Getting author name\email from user configs 
 @author: zewalldev@ya.ru
-@implementor: zewalldev@ya.ru 
+@implementer: zewalldev@ya.ru 
 @description
 Using git information about user name\email when todo\fixme creating.
 

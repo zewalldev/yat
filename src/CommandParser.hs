@@ -1,77 +1,57 @@
-{-# LANGUAGE LambdaCase #-}
 module CommandParser (parseCommand) where
 
-import CommandImpl (Command (..))
-import Text.Parsec (char, digit, eof, letter, many, many1, space, spaces, string, try, (<|>))
+import ParserUtils (identifier, spaces1)
+import Text.Parsec (eof, spaces, string, try, (<|>))
 import Text.Parsec.String (Parser)
-import Types (TaskStatus (..))
-
-identifier :: Parser String
-identifier = do
-  h <- firstChar
-  t <- many nonFirstChar
-  return (h : t)
-  where
-    firstChar = letter
-    nonFirstChar = digit <|> firstChar <|> char '-'
-
-spaces1 :: Parser String
-spaces1 = many1 space
+import Types (Command (..), TaskStatus (..))
 
 parseInitCommand :: Parser Command
 parseInitCommand = do
   _ <- string "init"
   _ <- spaces
   eof
-  return Init
+  return InitCommand
 
 parseRequestTodoCommand :: Parser Command
 parseRequestTodoCommand = do
   _ <- string "request"
   _ <- spaces1
-  _ <- string "todo"
-  _ <- spaces1
   name <- identifier
   eof
-  return (RequestTodo name)
+  return (RequestTaskCommand name)
 
 parseStartTodoCommand :: Parser Command
 parseStartTodoCommand = do
   _ <- string "start"
   _ <- spaces1
-  _ <- string "todo"
-  _ <- spaces1
   name <- identifier
   eof
-  return (StartTodo name)
+  return (StartTaskCommand name)
 
 parseFinishTodoCommand :: Parser Command
 parseFinishTodoCommand = do
   _ <- string "finish"
   _ <- spaces1
-  _ <- string "todo"
-  _ <- spaces1
   name <- identifier
   eof
-  return (FinishTodo name)
+  return (FinishTaskCommand name)
 
-mapStatus :: String -> TaskStatus
-mapStatus = \case
-  "requested" -> Requested
-  "inprogress" -> Inprogress
-  "finished" -> Done
-  _ -> Requested
+parseRequestedStatus :: Parser TaskStatus
+parseRequestedStatus = string "requested" >> pure RequestedStatus
+
+parseInprogressStatus :: Parser TaskStatus
+parseInprogressStatus = string "inprogress" >> pure InprogressStatus
+
+parseFinishedStatus :: Parser TaskStatus
+parseFinishedStatus = string "done" >> pure DoneStatus
 
 parseTodoListCommand :: Parser Command
 parseTodoListCommand = do
   _ <- string "list"
   _ <- spaces1
-  status <- string "requested" <|> string "inprogress" <|> string "finished"
-  _ <- spaces1
-  _ <- string "todo"
-  return (ListTodo $ mapStatus status)
-
-
+  status <- parseRequestedStatus <|> parseInprogressStatus <|> parseFinishedStatus
+  eof
+  return (ListTaskCommand status)
 
 parseCommand :: Parser Command
 parseCommand =

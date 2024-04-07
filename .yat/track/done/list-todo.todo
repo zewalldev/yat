@@ -1,6 +1,6 @@
 @title: Add todo list command
 @author: zewalldev@ya.ru
-@implementor: zewalldev@ya.ru 
+@implementer: zewalldev@ya.ru 
 @description
 Add command like:
  - list requested todo

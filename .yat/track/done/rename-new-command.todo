@@ -1,6 +1,6 @@
 @title: Rename "new" command to "request"
 @author: zeawalldev@ya.ru
-@implementor: zewalldev@ya.ru 
+@implementer: zewalldev@ya.ru 
 @description
 Rename "new" command to "request". 
 Also rename "new" direcotry to "requested".

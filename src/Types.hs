@@ -1,16 +1,49 @@
 {-# LANGUAGE RankNTypes #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
-module Types (TaskName, TaskFullName (..), TaskStatus (..), TodoContent (..)) where
+{-# HLINT ignore "Use newtype instead of data" #-}
 
-type TaskName = String
+module Types
+  ( TaskStatus (..),
+    Task (..),
+    Requested (..),
+    Inprogress (..),
+    Done (..),
+    TaskKey,
+    Command (..),
+    OperationCommand (..),
+  )
+where
 
-data TaskStatus = Requested | Inprogress | Done deriving (Show)
+data TaskStatus = RequestedStatus | InprogressStatus | DoneStatus deriving (Show)
 
-data TaskFullName = MkTaskFullName TaskStatus TaskName
+type TaskKey = String
 
-data TodoContent = TodoContent
-  { taskTitle :: String,
-    taskDescription :: String,
-    taskAuthor :: String,
-    taskImplementor :: String
+data Task = Todo
+  { _title :: String,
+    _description :: String
   }
+
+data Requested = Requested
+  { _task :: Task,
+    _author :: String
+  }
+
+data Inprogress = Inprogress
+  { _requested :: Requested,
+    _implementer :: String
+  }
+
+data Done = Done
+  { _inprogress :: Inprogress
+  }
+
+data Command
+  = InitCommand
+  | RequestTaskCommand TaskKey
+  | StartTaskCommand TaskKey
+  | FinishTaskCommand TaskKey
+  | ListTaskCommand TaskStatus
+  deriving (Show)
+
+data OperationCommand = RequestOperation | StartOperation | FinishOperation
