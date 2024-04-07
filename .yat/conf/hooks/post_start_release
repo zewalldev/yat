@@ -1,0 +1,6 @@
+#!/bin/bash
+
+git checkout -b release/$1
+git add .yat/track/done/*
+git add .yat/track/release/$1
+git commit -m "Release $1 is started"
