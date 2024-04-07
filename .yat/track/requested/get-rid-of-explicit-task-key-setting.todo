@@ -1,0 +1,6 @@
+@title: Get rid of explicit task key setting 
+@author: Denis Shirokov <zewalldev@yandex.ru>
+@description
+Generate task key automatically for instance from title.
+
+@end
