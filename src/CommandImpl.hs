@@ -21,8 +21,7 @@ exec (RequestTaskCommand name) = runOp $ do
   Config rootDir <- loadConfig
   runPreHook rootDir RequestOperation name
   user <- getUser
-  text <- edit (toString Requested {_author = user, _task = Todo {_title = "", _description = ""}})
-  requested <- taskFromString text
+  requested <- taskFromString =<< edit (toString Requested {_author = user, _task = Todo {_title = "", _description = ""}})
   createTodo rootDir name requested
   runPostHook rootDir RequestOperation name
   pure $ "Todo " ++ name ++ " is requested"
@@ -31,8 +30,7 @@ exec (StartTaskCommand name) = runOp $ do
   runPreHook rootDir StartOperation name
   requested <- getRequestedTodo rootDir name
   user <- getUser
-  text <- edit (toString Inprogress {_implementer = user, _requested = requested})
-  inprogress <- taskFromString text
+  inprogress <- taskFromString =<< edit (toString Inprogress {_implementer = user, _requested = requested})
   makeTodoInprogress rootDir name inprogress
   runPostHook rootDir StartOperation name
   pure $ "Todo " ++ name ++ " is starting"
