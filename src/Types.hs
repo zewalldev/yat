@@ -12,6 +12,8 @@ module Types
     TaskKey,
     Command (..),
     OperationCommand (..),
+    ReleaseVersion,
+    Identifier (..),
   )
 where
 
@@ -38,12 +40,18 @@ data Done = Done
   { _inprogress :: Inprogress
   }
 
+type ReleaseVersion = String
+
 data Command
   = InitCommand
   | RequestTaskCommand TaskKey
   | StartTaskCommand TaskKey
   | FinishTaskCommand TaskKey
   | ListTaskCommand TaskStatus
+  | StartReleaseCommand ReleaseVersion
+  | FinishReleaseCommand ReleaseVersion
   deriving (Show)
 
 data OperationCommand = RequestOperation | StartOperation | FinishOperation
+
+data Identifier = TodoKey TaskKey | ReleaseKey ReleaseVersion

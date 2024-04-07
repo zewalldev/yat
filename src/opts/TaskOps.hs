@@ -11,18 +11,22 @@ module TaskOps
     getRequestedTodo,
     getInprogressTodo,
     getFinishedTodo,
+    startRelease,
+    addToRelease,
+    finishRelease,
   )
 where
 
-import ConstPath (donePath, inprogressPath, requestedPath)
+import Classes (FromString (fromString), FromStringError (..), ToString (..))
+import ConstPath (donePath, inprogressPath, releasePath, releasedPath, requestedPath)
+import Control.Monad (forM_)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Except (throwE)
 import Ops (Op, OpError (..))
-import System.Directory (doesFileExist, listDirectory, removeFile, renameFile)
+import System.Directory (createDirectoryIfMissing, doesFileExist, listDirectory, removeFile, renameDirectory, renameFile, doesDirectoryExist)
 import System.FilePath ((<.>), (</>))
-import Types (Inprogress (..), Requested (..), TaskStatus (..), Done, TaskKey)
-import Classes (FromString (fromString), FromStringError (..), ToString (..))
-import TaskClassesImpl()
+import TaskClassesImpl ()
+import Types (Done, Inprogress (..), ReleaseVersion, Requested (..), TaskKey, TaskStatus (..))
 
 getTask :: (FromString a) => FilePath -> Op a
 getTask path = do
@@ -76,7 +80,7 @@ createTodo root name content = do
 
 listKeys :: FilePath -> TaskStatus -> Op [String]
 listKeys root status = do
-  files <- liftIO . listDirectory $ root </> path
+  files <- fmap (filter (/= ".hold")) (liftIO . listDirectory $ root </> path)
   let keys = fmap (takeWhile ('.' /=)) files
   pure keys
   where
@@ -100,3 +104,37 @@ taskFromString content = do
   case todo of
     Left (FromStringError {_msg = msg}) -> throwE (OpError msg)
     Right task -> pure task
+
+startRelease :: FilePath -> ReleaseVersion -> Op ()
+startRelease root releaseVersion = do
+  let releaseVersionPath = root </> releasePath </> releaseVersion
+  isAlreadyExists <- liftIO $ doesDirectoryExist releaseVersionPath
+  if isAlreadyExists
+    then throwE $ OpError "Release already exists"
+    else do
+      liftIO . createDirectoryIfMissing True $ releaseVersionPath
+      pure ()
+
+addToRelease :: FilePath -> ReleaseVersion -> [TaskKey] -> Op ()
+addToRelease root version keys = do
+  let releaseVersionPath = root </> releasePath </> version
+  isReleaseExists <- liftIO $ doesDirectoryExist releaseVersionPath
+  if isReleaseExists
+    then do
+      forM_ keys (\key -> liftIO . renameFile (donePath </> key <.> "todo") $ releaseVersionPath </> key <.> "todo")
+    else throwE $ OpError "Release doesn't exist."
+
+finishRelease :: FilePath -> ReleaseVersion -> Op ()
+finishRelease root version = do
+  let releaseVersionPath = root </> releasePath </> version
+  let releasedVersionPath = root </> releasedPath </> version
+  isReleaseExists <- liftIO $ doesDirectoryExist releaseVersionPath
+  isReleasedAlreadyExists <- liftIO $ doesDirectoryExist releasedVersionPath
+  if isReleasedAlreadyExists
+    then throwE $ OpError "Release already finished"
+    else
+      if isReleaseExists
+        then do
+          liftIO . renameDirectory releaseVersionPath $ releasedVersionPath
+          pure ()
+        else throwE $ OpError "Release doesn't exist."

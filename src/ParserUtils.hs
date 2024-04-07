@@ -30,6 +30,6 @@ content :: String -> Parser String
 content name = do
   _ <- string $ "@" ++ name
   _ <- char '\n'
-  value <- manyTill anyChar (try (string "@end"))
+  value <- manyTill anyChar (try (string "\n@end"))
   _ <- many (oneOf "\n")
   pure value
