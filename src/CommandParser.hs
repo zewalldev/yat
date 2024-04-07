@@ -5,7 +5,6 @@ import Text.Parsec
   ( anyChar,
     eof,
     manyTill,
-    space,
     spaces,
     string,
     try,
