@@ -1,0 +1,6 @@
+@title: Syntax vim highlight
+@author: Denis Shirokov <zewalldev@yandex.ru>
+@description
+Add syntax vim highlight when task editing.
+
+@end
