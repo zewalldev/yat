@@ -1,0 +1,6 @@
+@title: Create default configuration when init 
+@author: Denis Shirokov <zewalldev@yandex.ru>
+@description
+Create default configuration when init. Also add configuration templates.
+
+@end
