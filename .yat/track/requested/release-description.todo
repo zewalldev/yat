@@ -1,0 +1,5 @@
+@title: Release description 
+@author: Denis Shirokov <zewalldev@yandex.ru>
+@description
+Add release description, openby and finishby fields.
+@end
