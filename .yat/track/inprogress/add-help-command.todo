@@ -1,6 +1,7 @@
 @title: Add help command 
 @author: Denis Shirokov <zewalldev@yandex.ru>
+@implementer: Denis Shirokov <zewalldev@yandex.ru>
 @description
 Add help command
-
+Try optparse-applicative
 @end
