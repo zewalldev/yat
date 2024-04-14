@@ -27,6 +27,7 @@ dependencies:
 - temporary
 - transformers
 - rainbow
+- optparse-applicative
 
 ghc-options:
 - -Wall

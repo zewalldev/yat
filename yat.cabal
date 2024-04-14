@@ -49,6 +49,7 @@ library
       base >=4.7 && <5
     , directory
     , filepath
+    , optparse-applicative
     , parsec
     , process
     , rainbow
@@ -67,6 +68,7 @@ executable yat
       base >=4.7 && <5
     , directory
     , filepath
+    , optparse-applicative
     , parsec
     , process
     , rainbow

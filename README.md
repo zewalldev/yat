@@ -1,6 +1,6 @@
 # yat
 
-YAT is a simple console tracker for pet projects  based on files and directories.
+YAT is a simple console tracker for pet projects based on the files.
 
 ## Instalation
 ```
@@ -8,15 +8,18 @@ git pull https://github.com/zewalldev/yat.git
 cd yat
 stack install
 ```
-To install stack аollow the  [instructions](https://docs.haskellstack.org/en/stable/install_and_upgrade/)
+To install stack please follow the [instructions](https://docs.haskellstack.org/en/stable/install_and_upgrade/)
 
 ## Available commands
-
+To get any help please use:
+```
+yat ANY_COMMAND --help
+```
 Initialize yat:
 ```
 yat init
 ```
-Creation, starting and finish tasks:
+Creation, starting and finish todo tasks:
 ```
 yat request <key>
 yat start <key>
@@ -24,8 +27,8 @@ yat finish <key>
 ```
 Starting and finishing releases
 ```
-yat start release <version>
-yat finish release <version>
+yat release start  <version>
+yat release finish <version>
 ```
 List tasks:
 ```
@@ -33,9 +36,9 @@ yat list requested
 yat list inprogress
 yat list done
 ```
-*where <key> must match the pattern `<letter><letter|digit|->*` e. g. ma-task1 and `<version>` can be an any string.*
+*where `<key>` and `<version>` can be an any string.*
 
-## Hook support
+## Hooks support
 You can configure hooks for **request**, **start** and **finish** commands.
 In order to do this, you need to create executable files in the directory `.yat/conf/hooks`. 
 The name of the executable file must match the pattern `<pre|post>_<command_name>_<todo|release>`.
@@ -45,4 +48,4 @@ pre_request_todo
 post_request_todo
 ```
 and the task key **my-task**  will be passed to these scripts as the first argument `$1`.
-An example for supporting git flow can be found in [git flow hooks](.yat/conf/hooks/)
+The example for supporting git flow can be found in [git flow hooks](.yat/conf/hooks/)

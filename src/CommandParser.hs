@@ -1,91 +1,83 @@
-module CommandParser (parseCommand) where
+module CommandParser (parseArgs) where
 
-import ParserUtils (identifier, spaces1)
-import Text.Parsec
-  ( anyChar,
-    eof,
-    manyTill,
-    spaces,
-    string,
-    try,
-    (<|>),
-  )
-import Text.Parsec.String (Parser)
-import Types (Command (..), TaskStatus (..))
+import Control.Applicative ((<|>))
+import Options.Applicative (Parser, ParserInfo, argument, command, commandGroup, execParser, fullDesc, header, help, helper, info, metavar, progDesc, str, subparser)
+import Types (Command (..), ReleaseVersion, TaskKey, TaskStatus (DoneStatus, InprogressStatus, RequestedStatus))
 
-parseInitCommand :: Parser Command
-parseInitCommand = do
-  _ <- string "init"
-  _ <- spaces
-  eof
-  return InitCommand
+parseArgs :: IO Command
+parseArgs = execParser commands
 
-parseRequestTodoCommand :: Parser Command
-parseRequestTodoCommand = do
-  _ <- string "request"
-  _ <- spaces1
-  name <- identifier
-  eof
-  return (RequestTaskCommand name)
+commands :: ParserInfo Command
+commands =
+  info
+    (helper <*> pCommands)
+    ( fullDesc
+        <> header "yat - Yet another tracker"
+        <> progDesc "Simple console file base task tracker"
+    )
 
-parseStartTodoCommand :: Parser Command
-parseStartTodoCommand = do
-  _ <- string "start"
-  _ <- spaces1
-  name <- identifier
-  eof
-  return (StartTaskCommand name)
+pCommands :: Parser Command
+pCommands = pInitCommands <|> pTaskFlowCommands <|> pReleaseFlowCommands <|> pReportCommands
 
-parseFinishTodoCommand :: Parser Command
-parseFinishTodoCommand = do
-  _ <- string "finish"
-  _ <- spaces1
-  name <- identifier
-  eof
-  return (FinishTaskCommand name)
+pTaskFlowCommands :: Parser Command
+pTaskFlowCommands =
+  subparser
+    ( command "request" (info (helper <*> (RequestTaskCommand <$> pTaskKey)) (progDesc "Reuqest Todo"))
+        <> command "start" (info (helper <*> (StartTaskCommand <$> pTaskKey)) (progDesc "Start Todo"))
+        <> command "finish" (info (helper <*> (FinishTaskCommand <$> pTaskKey)) (progDesc "Finish Todo"))
+        <> commandGroup "Task flow commands"
+        <> metavar "TASK_FLOW_COMMANDS"
+    )
 
-parseRequestedStatus :: Parser TaskStatus
-parseRequestedStatus = string "requested" >> pure RequestedStatus
+pReleaseFlowCommands :: Parser Command
+pReleaseFlowCommands =
+  subparser
+    ( command
+        "release"
+        ( info
+            ( helper
+                <*> subparser
+                  ( command "start" (info (helper <*> (StartReleaseCommand <$> pReleaseVersion)) (progDesc "Start release"))
+                      <> command "finish" (info (helper <*> (FinishReleaseCommand <$> pReleaseVersion)) (progDesc "Finish release"))
+                  )
+            )
+            (progDesc "Release commands")
+        )
+        <> commandGroup "Release flow commands"
+        <> metavar "RELEASE_FLOW_COMMANDS"
+    )
 
-parseInprogressStatus :: Parser TaskStatus
-parseInprogressStatus = string "inprogress" >> pure InprogressStatus
+pInitCommands :: Parser Command
+pInitCommands =
+  subparser
+    ( command "init" (info (helper <*> pure InitCommand) (progDesc "Initialize yat"))
+        <> commandGroup "Init commands"
+        <> metavar "INIT_COMMANDS"
+    )
 
-parseFinishedStatus :: Parser TaskStatus
-parseFinishedStatus = string "done" >> pure DoneStatus
+pReportCommands :: Parser Command
+pReportCommands =
+  subparser
+    ( command
+        "list"
+        ( info
+            ( helper
+                <*> ( ListTaskCommand
+                        <$> subparser
+                          ( command "requested" (info (helper <*> pure RequestedStatus) (progDesc "List requested"))
+                              <> command "inprogress" (info (helper <*> pure InprogressStatus) (progDesc "List inprogress"))
+                              <> command "done" (info (helper <*> pure DoneStatus) (progDesc "List finished"))
+                          )
+                    )
+            )
+            (progDesc "List commands")
+        )
+        <> commandGroup "Report commands"
+        <> metavar "REPROT_COMMANDS"
+    )
 
-parseTodoListCommand :: Parser Command
-parseTodoListCommand = do
-  _ <- string "list"
-  _ <- spaces1
-  status <- parseRequestedStatus <|> parseInprogressStatus <|> parseFinishedStatus
-  eof
-  return (ListTaskCommand status)
+pTaskKey :: Parser TaskKey
+pTaskKey = argument str (metavar "KEY" <> help "Task Key")
 
-parseReleaseStartCommand :: Parser Command
-parseReleaseStartCommand = do
-  _ <- string "start"
-  _ <- spaces1
-  _ <- string "release"
-  _ <- spaces1
-  version <- manyTill anyChar (try eof)
-  pure (StartReleaseCommand version)
-
-parseReleaseFinishCommand :: Parser Command
-parseReleaseFinishCommand = do
-  _ <- string "finish"
-  _ <- spaces1
-  _ <- string "release"
-  _ <- spaces1
-  version <- manyTill anyChar (try eof)
-
-  pure (FinishReleaseCommand version)
-
-parseCommand :: Parser Command
-parseCommand =
-  try parseInitCommand
-    <|> try parseRequestTodoCommand
-    <|> try parseStartTodoCommand
-    <|> try parseFinishTodoCommand
-    <|> try parseTodoListCommand
-    <|> try parseReleaseStartCommand
-    <|> try parseReleaseFinishCommand
+pReleaseVersion :: Parser ReleaseVersion
+pReleaseVersion = argument str (metavar "VERSION" <> help "Release Version")
